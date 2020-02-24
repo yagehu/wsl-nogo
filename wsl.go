@@ -165,6 +165,7 @@ type Configuration struct {
 type Result struct {
 	Node   ast.Node
 	Reason string
+	NoFix  bool
 	Type   ErrorType
 }
 
@@ -384,7 +385,23 @@ func (p *Processor) parseBlockStatements(statements []ast.Stmt) {
 			}
 
 			if moreThanOneStatementAbove() {
-				p.addWhitespaceError(t, reasonOnlyOneCuddle)
+				switch statements[i-2].(type) {
+				case *ast.AssignStmt:
+					p.addWhitespaceError(t, reasonOnlyOneCuddle)
+				default:
+					if atLeastOneInListsMatch(rightAndLeftHandSide, assignedOnLineAbove) {
+						p.addWhitespaceErrorNoFix(t, reasonOnlyOneCuddle)
+						continue
+					}
+
+					if atLeastOneInListsMatch(assignedOnLineAbove, assignedFirstInBlock) {
+						p.addWhitespaceErrorNoFix(t, reasonOnlyOneCuddle)
+						continue
+					}
+
+					p.addWhitespaceError(t, reasonOnlyOneCuddle)
+				}
+
 				continue
 			}
 
@@ -949,7 +966,7 @@ func (p *Processor) findLeadingAndTrailingWhitespaces(ident *ast.Ident, stmt, ne
 	}
 
 	if p.nodeStart(firstStatement) != blockStartLine+allowedLinesBeforeFirstStatement {
-		p.addError(stmt, reasonBlockStartsWithWS, WhitespaceShouldRemoveBeginning)
+		p.addError(stmt, reasonBlockStartsWithWS, WhitespaceShouldRemoveBeginning, false)
 	}
 
 	// If the blockEndLine is not 0 we're a regular block (not case).
@@ -972,7 +989,7 @@ func (p *Processor) findLeadingAndTrailingWhitespaces(ident *ast.Ident, stmt, ne
 		}
 
 		if p.nodeEnd(lastStatement) != blockEndLine-1 && !isExampleFunc(ident) {
-			p.addError(stmt, reasonBlockEndsWithWS, WhitespaceShouldRemoveEnd)
+			p.addError(stmt, reasonBlockEndsWithWS, WhitespaceShouldRemoveEnd, false)
 		}
 
 		return
@@ -1054,15 +1071,20 @@ func (p *Processor) nodeEnd(node ast.Node) int {
 }
 
 func (p *Processor) addWhitespaceError(node ast.Node, reason string) {
-	p.addError(node, reason, WhitespaceShouldAdd)
+	p.addError(node, reason, WhitespaceShouldAdd, false)
+}
+
+func (p *Processor) addWhitespaceErrorNoFix(node ast.Node, reason string) {
+	p.addError(node, reason, WhitespaceShouldAdd, true)
 }
 
 // Add an error for the file and line number for the current token.Pos with the
 // given reason.
-func (p *Processor) addError(node ast.Node, reason string, errType ErrorType) {
+func (p *Processor) addError(node ast.Node, reason string, errType ErrorType, noFix bool) {
 	p.Result = append(p.Result, Result{
 		Node:   node,
 		Reason: reason,
+		NoFix:  noFix,
 		Type:   errType,
 	})
 }
