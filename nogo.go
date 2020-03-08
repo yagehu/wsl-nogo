@@ -11,5 +11,6 @@ var Analyzer = &analysis.Analyzer{
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
+	pass.Reportf(pass.Files[0].Package, "test")
 	return nil, nil
 }
