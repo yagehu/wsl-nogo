@@ -1,0 +1,26 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@bazel_gazelle//:def.bzl", "gazelle")
+
+# gazelle:prefix github.com/yagehu/wsl-nogo
+gazelle(name = "gazelle")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "nogo.go",
+        "wsl.go",
+    ],
+    importpath = "github.com/yagehu/wsl-nogo",
+    visibility = ["//visibility:public"],
+    deps = ["@org_golang_x_tools//go/analysis:go_default_library"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["wsl_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
+    ],
+)
