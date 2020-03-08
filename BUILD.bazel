@@ -16,7 +16,7 @@ go_library(
 )
 
 go_tool_library(
-    name = "wsl",
+    name = "go_tool_library",
     srcs = [
         "nogo.go",
         "wsl.go",
